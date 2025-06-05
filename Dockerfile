@@ -10,12 +10,12 @@ WORKDIR /app
 # העתקת כל הקבצים
 COPY . /app
 
-# התקנת התלויות מתוך requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# התקנת התלויות מתוך requirements.txt שבתוך תיקיית entryTracker
+RUN pip install --no-cache-dir -r entryTracker/requirements.txt
 
-# פתיחת פורט 5000 (כפי שנאמר)
+# פתיחת פורט 5000
 EXPOSE 5000
 
-# הרצת האפליקציה
-CMD ["python", "app.py"]
+# הרצת האפליקציה מתוך תיקיית entryTracker
+CMD ["python", "entryTracker/app.py"]
 
