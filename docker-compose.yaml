@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  entrytracker:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=pass
+      - DB_NAME=entrytracker
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: pass
+      MYSQL_DATABASE: entrytracker
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
+
