@@ -23,7 +23,7 @@ jobs:
       - name: Run unit tests
         run: |
           pip install pytest
-          pytest entryTracker/tests
+          pytest entryTracker/tests || exit 1
 
   package:
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Start docker-compose
+      - name: Start Docker Compose
         run: docker compose up -d
 
       - name: Wait for MySQL to be healthy
@@ -71,10 +71,11 @@ jobs:
             sleep 5
           done
 
-      - name: Run E2E test with curl
-        run: curl http://localhost:5000
+      - name: Run E2E test
+        run: |
+          curl --fail http://localhost:5000 || (echo "E2E test failed" && exit 1)
 
-      - name: Stop docker-compose
+      - name: Stop Docker Compose
         run: docker compose down
 
   push_image:
@@ -91,4 +92,5 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push Docker image
-        run: docker push estiblass/entrytracker:latest
+        run: |
+          docker push estiblass/entrytracker:latest || (echo "Push failed" && exit 1)
