@@ -20,13 +20,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r entryTracker/requirements.txt
 
-      - name: Run the application in background
+      - name: Run unit tests
         run: |
-          python entryTracker/app.py &
-          sleep 5
-
-      - name: Run unit test with curl
-        run: curl http://localhost:5000
+          pip install pytest
+          pytest entryTracker/tests
 
   package:
     runs-on: ubuntu-latest
@@ -59,17 +56,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Verify Docker Compose is available
-        run: docker compose version
-
       - name: Start docker-compose
         run: docker compose up -d
 
       - name: Wait for MySQL to be healthy
         run: |
           for i in {1..30}; do
-            CONTAINER=$(docker ps --filter "name=db" --format "{{.Names}}" | head -n 1)
-            STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER" || echo "notfound")
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' $(docker ps -qf name=db) || echo "notfound")
             if [ "$STATUS" == "healthy" ]; then
               echo "MySQL is healthy"
               break
@@ -94,8 +87,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-            username: ${{ secrets.DOCKER_USERNAME }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push Docker image
         run: docker push estiblass/entrytracker:latest
