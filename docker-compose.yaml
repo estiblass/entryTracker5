@@ -8,10 +8,12 @@ services:
     depends_on:
       - db
     environment:
-      - DB_HOST=db
-      - DB_USER=root
-      - DB_PASSWORD=pass
-      - DB_NAME=entrytracker
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: pass
+      DB_NAME: entrytracker
+    volumes:
+      - .:/app  # אופציונלי - אם את רוצה שינויי קוד חיים
 
   db:
     image: mysql:5.7
@@ -19,6 +21,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: pass
       MYSQL_DATABASE: entrytracker
+    ports:
+      - "3306:3306"  # אופציונלי - אם את רוצה גישה ישירה מבחוץ
     volumes:
       - db_data:/var/lib/mysql
 
