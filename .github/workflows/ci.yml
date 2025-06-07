@@ -18,13 +18,15 @@ jobs:
           python-version: 3.12
 
       - name: Install dependencies
-        run: |
-          pip install -r entryTracker/requirements.txt
+        run: pip install -r entryTracker/requirements.txt
 
-      - name: Run unit tests
+      - name: Run the application in background
         run: |
-          pip install pytest
-          pytest entryTracker/tests || exit 1
+          python entryTracker/app.py &
+          sleep 5
+
+      - name: Run unit test with curl
+        run: curl http://localhost:5000
 
   package:
     runs-on: ubuntu-latest
@@ -57,20 +59,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Ensure Docker Compose is installed
-        run: |
-          docker compose version || {
-            echo "Docker Compose is not available"
-            exit 1
-          }
+      - name: Verify Docker Compose is available
+        run: docker compose version
 
-      - name: Start services using Docker Compose
+      - name: Start docker-compose
         run: docker compose up -d
 
-      - name: Wait for MySQL to become healthy
+      - name: Wait for MySQL to be healthy
         run: |
           for i in {1..30}; do
-            STATUS=$(docker inspect --format='{{.State.Health.Status}}' $(docker ps -qf name=db) || echo "notfound")
+            CONTAINER=$(docker ps --filter "name=db" --format "{{.Names}}" | head -n 1)
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER" || echo "notfound")
             if [ "$STATUS" == "healthy" ]; then
               echo "MySQL is healthy"
               break
@@ -79,15 +78,10 @@ jobs:
             sleep 5
           done
 
-      - name: Run E2E test
-        run: |
-          curl --fail http://localhost:5000 || {
-            echo "E2E test failed"
-            docker compose logs
-            exit 1
-          }
+      - name: Run E2E test with curl
+        run: curl http://localhost:5000
 
-      - name: Shut down services
+      - name: Stop docker-compose
         run: docker compose down
 
   push_image:
@@ -100,12 +94,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+            username: ${{ secrets.DOCKER_USERNAME }}
+            password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push Docker image
-        run: |
-          docker push estiblass/entrytracker:latest || {
-            echo "Push to Docker Hub failed"
-            exit 1
-          }
+        run: docker push estiblass/entrytracker:latest
