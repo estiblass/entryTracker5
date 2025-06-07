@@ -18,7 +18,8 @@ jobs:
           python-version: 3.12
 
       - name: Install dependencies
-        run: pip install -r entryTracker/requirements.txt
+        run: |
+          pip install -r entryTracker/requirements.txt
 
       - name: Run unit tests
         run: |
@@ -56,10 +57,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Start Docker Compose
+      - name: Ensure Docker Compose is installed
+        run: |
+          docker compose version || {
+            echo "Docker Compose is not available"
+            exit 1
+          }
+
+      - name: Start services using Docker Compose
         run: docker compose up -d
 
-      - name: Wait for MySQL to be healthy
+      - name: Wait for MySQL to become healthy
         run: |
           for i in {1..30}; do
             STATUS=$(docker inspect --format='{{.State.Health.Status}}' $(docker ps -qf name=db) || echo "notfound")
@@ -73,9 +81,13 @@ jobs:
 
       - name: Run E2E test
         run: |
-          curl --fail http://localhost:5000 || (echo "E2E test failed" && exit 1)
+          curl --fail http://localhost:5000 || {
+            echo "E2E test failed"
+            docker compose logs
+            exit 1
+          }
 
-      - name: Stop Docker Compose
+      - name: Shut down services
         run: docker compose down
 
   push_image:
@@ -93,4 +105,7 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push estiblass/entrytracker:latest || (echo "Push failed" && exit 1)
+          docker push estiblass/entrytracker:latest || {
+            echo "Push to Docker Hub failed"
+            exit 1
+          }
