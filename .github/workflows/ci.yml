@@ -59,19 +59,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Docker Compose
-        run: |
-          curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          chmod +x /usr/local/bin/docker-compose
-          /usr/local/bin/docker-compose version
+      - name: Verify Docker Compose is available
+        run: docker compose version
 
       - name: Start docker-compose
-        run: /usr/local/bin/docker-compose up -d
+        run: docker compose up -d
 
-      - name: Wait for services to be healthy
+      - name: Wait for MySQL to be healthy
         run: |
           for i in {1..30}; do
-            STATUS=$(docker inspect --format='{{.State.Health.Status}}' entrytracker-db-1 || echo "notfound")
+            CONTAINER=$(docker ps --filter "name=db" --format "{{.Names}}" | head -n 1)
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER" || echo "notfound")
             if [ "$STATUS" == "healthy" ]; then
               echo "MySQL is healthy"
               break
@@ -84,7 +82,7 @@ jobs:
         run: curl http://localhost:5000
 
       - name: Stop docker-compose
-        run: /usr/local/bin/docker-compose down
+        run: docker compose down
 
   push_image:
     runs-on: ubuntu-latest
