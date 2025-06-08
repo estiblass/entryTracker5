@@ -1,10 +1,19 @@
+FROM python:3.10-slim
+
+# הגדרת משתנה סביבה כדי לוודא ש-Python ירשום Log לקונסול
+ENV PYTHONUNBUFFERED=1
+
+# הגדרת תיקיית העבודה
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# העתקת כל הקבצים
+COPY . /app
 
-COPY . .
+# התקנת התלויות מתוך requirements.txt שבתוך תיקיית entryTracker
+RUN pip install --no-cache-dir -r entryTracker/requirements.txt
 
+# פתיחת פורט 5000
 EXPOSE 5000
 
-CMD ["python", "app.py"]
+# הרצת האפליקציה מתוך תיקיית entryTracker
+CMD ["python", "entryTracker/app.py"]
